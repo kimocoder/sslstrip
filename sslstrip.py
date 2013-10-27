@@ -38,7 +38,8 @@ import sys, getopt, logging, traceback, string, os
 gVersion = "0.9"
 
 def usage():
-    print "\nsslstrip " + gVersion + " by Moxie Marlinspike"
+    print "\nsslstrip " + gVersion + " by Moxie Marlinspike (@xtr4nge v0.9.1)"
+    print "Fork: https://github.com/xtr4nge/sslstrip"
     print "Usage: sslstrip <options>\n"
     print "Options:"
     print "-w <filename>, --write=<filename> Specify file to log to (optional)."

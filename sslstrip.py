@@ -31,6 +31,7 @@ from sslstrip.StrippingProxy import StrippingProxy
 from sslstrip.URLMonitor import URLMonitor
 from sslstrip.CookieCleaner import CookieCleaner
 from sslstrip.ResponseTampererFactory import ResponseTampererFactory
+from sslstrip.HTMLInjector import HTMLInjector
 
 import sys, getopt, logging, traceback, string, os
 
@@ -48,6 +49,7 @@ def usage():
     print "-f , --favicon                    Substitute a lock favicon on secure requests."
     print "-k , --killsessions               Kill sessions in progress."
     print "-t <config>, --tamper <config>    Enable response tampering with settings from <config>."
+    print "-i , --inject                     Inject code into HTML pages using a text file (default inject.txt)."
     print "-h                                Print this help message."
     print ""
 
@@ -58,11 +60,12 @@ def parseOptions(argv):
     spoofFavicon = False
     killSessions = False
     tamperConfigFile = False
+    injectFile   = 'inject.txt'
     
     try:                                
-        opts, args = getopt.getopt(argv, "hw:l:psafkt:", 
+        opts, args = getopt.getopt(argv, "hw:l:psafkt:i:", 
                                    ["help", "write=", "post", "ssl", "all", "listen=", 
-                                    "favicon", "killsessions", "tamper="])
+                                    "favicon", "killsessions", "tamper=", "inject"])
 
         for opt, arg in opts:
             if opt in ("-h", "--help"):
@@ -84,18 +87,27 @@ def parseOptions(argv):
                 killSessions = True
             elif opt in ("-t", "--tamper"):
                 tamperConfigFile = arg
+            elif opt in ("-i", "--inject"):
+                injectFile = arg
 
-        return (logFile, logLevel, listenPort, spoofFavicon, killSessions, tamperConfigFile)
+        return (logFile, logLevel, listenPort, spoofFavicon, killSessions, tamperConfigFile, injectFile)
                     
     except getopt.GetoptError:           
         usage()                          
         sys.exit(2)                         
 
 def main(argv):
-    (logFile, logLevel, listenPort, spoofFavicon, killSessions, tamperConfigFile) = parseOptions(argv)
-        
+    (logFile, logLevel, listenPort, spoofFavicon, killSessions, tamperConfigFile, injectFile) = parseOptions(argv)
+
     logging.basicConfig(level=logLevel, format='%(asctime)s %(message)s',
                         filename=logFile, filemode='w')
+
+    try:
+        # make the file a command line option?
+        with open(injectFile, 'r') as f:
+            HTMLInjector.getInstance().setInjectionCode(f.read())
+    except IOError as e:
+        logging.warning("Couldn't read " + injectFile)
 
     URLMonitor.getInstance().setFaviconSpoofing(spoofFavicon)
     CookieCleaner.getInstance().setEnabled(killSessions)

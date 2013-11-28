@@ -14,7 +14,7 @@ Example: sslstrip -t app_cache_poison/config.ini
 
 This fork can also inject code into HTML pages using a text file only. (by xtr4nge based on Kane Mathers commit)
 
-Option: -i , --inject                     Inject HTML code (default inject.txt).
+Option: -i , --inject                     Inject HTML code.
 Example: sslstrip -i inject.txt
 
 

@@ -134,15 +134,17 @@ class ServerConnection(HTTPClient):
 
         # ------ TAMPER ------
         if self.responseTamperer:
-          data = self.responseTamperer.tamper(self.client.uri, data, self.client.responseHeaders, self.client.getAllHeaders(), self.client.getClientIP())
+            data = self.responseTamperer.tamper(self.client.uri, data, self.client.responseHeaders, self.client.getAllHeaders(), self.client.getClientIP())
         # ------ TAMPER ------
         
         # ------ HTML CODE INJECT ------
-        content_type = self.client.responseHeaders.getRawHeaders('content-type')
+        if self.HTMLInjector:
+            content_type = self.client.responseHeaders.getRawHeaders('content-type')
 
-        # only want to inject into text/html pages
-        if content_type and content_type[0] == 'text/html':
-            data = self.HTMLInjector.inject(data)
+            # only want to inject into text/html pages
+            if content_type and content_type[0] == 'text/html':
+                #data = self.HTMLInjector.inject(data)
+                data = self.HTMLInjector.inject(data, self.client.uri)
         # ------ HTML CODE INJECT ------
 
         if (self.contentLength != None):

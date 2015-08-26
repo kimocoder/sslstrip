@@ -157,7 +157,10 @@ class ServerConnection(HTTPClient):
     def shutdown(self):
         if not self.shutdownComplete:
             self.shutdownComplete = True
-            self.client.finish()
+            try:
+                self.client.finish()
+            except RuntimeError:
+                logging.warning("Could not finish session.")
             self.transport.loseConnection()
 
 

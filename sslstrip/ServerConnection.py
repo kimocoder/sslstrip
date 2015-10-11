@@ -100,7 +100,7 @@ class ServerConnection(HTTPClient):
         elif (key.lower() == 'set-cookie'):
             self.client.responseHeaders.addRawHeader(key, value)
         elif (key.lower() == 'strict-transport-security'):
-						logging.debug("Removing STS header")
+			logging.debug("Removing STS header")
         else:
             self.client.setHeader(key, value)
 
@@ -159,7 +159,10 @@ class ServerConnection(HTTPClient):
     def shutdown(self):
         if not self.shutdownComplete:
             self.shutdownComplete = True
-            self.client.finish()
+            try:
+                self.client.finish()
+            except RuntimeError:
+                logging.warning("Could not finish session.")
             self.transport.loseConnection()
 
 

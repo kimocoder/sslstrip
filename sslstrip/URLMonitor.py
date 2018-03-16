@@ -52,8 +52,13 @@ class URLMonitor:
         method      = url[0:methodIndex]
 
         pathIndex   = url.find("/", methodIndex)
-        host        = url[methodIndex:pathIndex]
-        path        = url[pathIndex:]
+        if pathIndex == -1:
+            # invalid URL, missing path, assume '/'
+            host = url[methodIndex:]
+            path = '/'
+        else:
+            host = url[methodIndex:pathIndex]
+            path = url[pathIndex:]
 
         port        = 443
         portIndex   = host.find(":")

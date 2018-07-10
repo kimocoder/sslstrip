@@ -122,15 +122,16 @@ class ServerConnection(HTTPClient):
         if (self.isCompressed):
             logging.debug("Decompressing content...")
             data = gzip.GzipFile('', 'rb', 9, StringIO.StringIO(data)).read()
-            
+
         logging.log(self.getLogLevel(), "Read from server:\n" + data)
 
         data = self.replaceSecureLinks(data)
 
         if (self.contentLength != None):
             self.client.setHeader('Content-Length', len(data))
-        
-        self.client.write(data)
+
+        if data:
+            self.client.write(data)
         self.shutdown()
 
     def replaceSecureLinks(self, data):
@@ -153,5 +154,3 @@ class ServerConnection(HTTPClient):
             self.shutdownComplete = True
             self.client.finish()
             self.transport.loseConnection()
-
-

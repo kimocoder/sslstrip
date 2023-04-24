@@ -55,19 +55,20 @@ class SSLServerConnection(ServerConnection):
 
     def buildAbsoluteLink(self, link):
         absoluteLink = ""
-        
-        if ((not link.startswith('http')) and (not link.startswith('/'))):                
-            absoluteLink = "http://"+self.headers['host']+self.stripFileFromPath(self.uri)+'/'+link
 
-            logging.debug("Found path-relative link in secure transmission: " + link)
-            logging.debug("New Absolute path-relative link: " + absoluteLink)                
-        elif not link.startswith('http'):
-            absoluteLink = "http://"+self.headers['host']+link
+        if not link.startswith('http'):
+            if not link.startswith('/'):        
+                absoluteLink = "http://"+self.headers['host']+self.stripFileFromPath(self.uri)+'/'+link
 
-            logging.debug("Found relative link in secure transmission: " + link)
-            logging.debug("New Absolute link: " + absoluteLink)                            
+                logging.debug(f"Found path-relative link in secure transmission: {link}")
+                logging.debug(f"New Absolute path-relative link: {absoluteLink}")
+            else:
+                absoluteLink = "http://"+self.headers['host']+link
 
-        if not absoluteLink == "":                
+                logging.debug(f"Found relative link in secure transmission: {link}")
+                logging.debug(f"New Absolute link: {absoluteLink}")                            
+
+        if absoluteLink:                
             absoluteLink = absoluteLink.replace('&amp;', '&')
             self.urlMonitor.addSecureLink(self.client.getClientIP(), absoluteLink);        
 
@@ -82,13 +83,13 @@ class SSLServerConnection(ServerConnection):
     def replaceFavicon(self, data):
         match = re.search(SSLServerConnection.iconExpression, data)
 
-        if (match != None):
-            data = re.sub(SSLServerConnection.iconExpression,
-                          "<link rel=\"SHORTCUT ICON\" href=\"/favicon-x-favicon-x.ico\">", data)
-        else:
+        if match is None:
             data = re.sub(SSLServerConnection.headExpression,
                           "<head><link rel=\"SHORTCUT ICON\" href=\"/favicon-x-favicon-x.ico\">", data)
-            
+
+        else:
+            data = re.sub(SSLServerConnection.iconExpression,
+                          "<link rel=\"SHORTCUT ICON\" href=\"/favicon-x-favicon-x.ico\">", data)
         return data
         
     def replaceSecureLinks(self, data):

@@ -43,7 +43,7 @@ class CookieCleaner:
     _instance = None
 
     def getInstance():
-        if CookieCleaner._instance == None:
+        if CookieCleaner._instance is None:
             CookieCleaner._instance = CookieCleaner()
 
         return CookieCleaner._instance
@@ -60,9 +60,11 @@ class CookieCleaner:
     def isClean(self, method, client, host, headers):
         if method == "POST":             return True
         if not self.enabled:             return True
-        if not self.hasCookies(headers): return True
-        
-        return (client, self.getDomainFor(host)) in self.cleanedCookies
+        return (
+            (client, self.getDomainFor(host)) in self.cleanedCookies
+            if self.hasCookies(headers)
+            else True
+        )
 
     def getExpireHeaders(self, method, client, host, headers, path):
         domain = self.getDomainFor(host)
@@ -82,25 +84,36 @@ class CookieCleaner:
 
     def getDomainFor(self, host):
         hostParts = host.split(".")
-        return "." + hostParts[-2] + "." + hostParts[-1]
+        return f".{hostParts[-2]}.{hostParts[-1]}"
 
     def getExpireCookieStringFor(self, cookie, host, domain, path):
         pathList      = path.split("/")
-        expireStrings = list()
-        
-        expireStrings.append(cookie + "=" + "EXPIRED;Path=/;Domain=" + domain + 
-                             ";Expires=Mon, 01-Jan-1990 00:00:00 GMT\r\n")
-
-        expireStrings.append(cookie + "=" + "EXPIRED;Path=/;Domain=" + host + 
-                             ";Expires=Mon, 01-Jan-1990 00:00:00 GMT\r\n")
+        expireStrings = [
+            (
+                f"{cookie}=EXPIRED;Path=/;Domain={domain}"
+                + ";Expires=Mon, 01-Jan-1990 00:00:00 GMT\r\n"
+            ),
+            (
+                f"{cookie}=EXPIRED;Path=/;Domain={host}"
+                + ";Expires=Mon, 01-Jan-1990 00:00:00 GMT\r\n"
+            ),
+        ]
 
         if len(pathList) > 2:
-            expireStrings.append(cookie + "=" + "EXPIRED;Path=/" + pathList[1] + ";Domain=" +
-                                 domain + ";Expires=Mon, 01-Jan-1990 00:00:00 GMT\r\n")
+            expireStrings.append(
+                (
+                    f"{cookie}=EXPIRED;Path=/{pathList[1]};Domain={domain}"
+                    + ";Expires=Mon, 01-Jan-1990 00:00:00 GMT\r\n"
+                )
+            )
 
-            expireStrings.append(cookie + "=" + "EXPIRED;Path=/" + pathList[1] + ";Domain=" +
-                                 host + ";Expires=Mon, 01-Jan-1990 00:00:00 GMT\r\n")
-        
+            expireStrings.append(
+                (
+                    f"{cookie}=EXPIRED;Path=/{pathList[1]};Domain={host}"
+                    + ";Expires=Mon, 01-Jan-1990 00:00:00 GMT\r\n"
+                )
+            )
+
         return expireStrings
 
     

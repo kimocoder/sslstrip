@@ -31,19 +31,19 @@ class ResponseTampererFactory:
     def __init__(self):
         pass
 
-    def createTamperer(configFile):
-        logging.log(logging.DEBUG, "Reading tamper config file: %s"  % (configFile))
+    def createTamperer(self):
+        logging.log(logging.DEBUG, f"Reading tamper config file: {self}")
         config = ResponseTampererFactory._default_config.copy()
-        if configFile:
-          config.update(ResponseTampererFactory.parseConfig(configFile))
+        if self:
+            config.update(ResponseTampererFactory.parseConfig(self))
         if config['enabled']:
-          logging.log(logging.DEBUG, "Loading tamper class: %s"  % (config["tamper_class"]))
-          m = __import__(config["tamper_class"], globals(), locals(), config["tamper_class"])
-          return getattr(m, m.__name__.replace(m.__package__ + ".", ''))(config)
+            logging.log(logging.DEBUG, f'Loading tamper class: {config["tamper_class"]}')
+            m = __import__(config["tamper_class"], globals(), locals(), config["tamper_class"])
+            return getattr(m, m.__name__.replace(f"{m.__package__}.", ''))(config)
 
-    def parseConfig(configFile):
+    def parseConfig(self):
         config = ConfigParser.ConfigParser()
-        config.read(configFile)
+        config.read(self)
         readConfig = config._sections
         readConfig.update(config.defaults())
         return readConfig
@@ -51,9 +51,11 @@ class ResponseTampererFactory:
     def getTampererInstance():
         return ResponseTampererFactory._instance
 
-    def buildTamperer(configFile):
-        if ResponseTampererFactory._instance == None:
-            ResponseTampererFactory._instance = ResponseTampererFactory.createTamperer(configFile)
+    def buildTamperer(self):
+        if ResponseTampererFactory._instance is None:
+            ResponseTampererFactory._instance = (
+                ResponseTampererFactory.createTamperer(self)
+            )
 
     getTampererInstance = staticmethod(getTampererInstance)
     buildTamperer = staticmethod(buildTamperer)

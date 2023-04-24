@@ -83,7 +83,9 @@ class ClientRequest(Request):
         return "lock.ico"        
 
     def handleHostResolvedSuccess(self, address):
-        logging.debug("Resolved host successfully: %s -> %s" % (self.getHeader('host'), address))
+        logging.debug(
+            f"Resolved host successfully: {self.getHeader('host')} -> {address}"
+        )
         host              = self.getHeader("host")
         headers           = self.cleanHeaders()
         client            = self.getClientIP()
@@ -91,7 +93,7 @@ class ClientRequest(Request):
 
         self.content.seek(0,0)
         postData          = self.content.read()
-        url               = 'http://' + host + path
+        url = f'http://{host}{path}'
         self.uri          = url # set URI to absolute
 
         hostparts = host.split(':')
@@ -111,14 +113,11 @@ class ClientRequest(Request):
                              self.urlMonitor.getSecurePort(client, url))
         else:
             logging.debug("Sending request via HTTP...")
-            port = 80
-            if len(hostparts) > 1:
-                port = int(hostparts[1])
-
+            port = int(hostparts[1]) if len(hostparts) > 1 else 80
             self.proxyViaHTTP(address, self.method, path, postData, headers, port)
 
     def handleHostResolvedError(self, error):
-        logging.warning("Host resolution error: " + str(error))
+        logging.warning(f"Host resolution error: {str(error)}")
         try:
             self.finish()
         except RuntimeError:
@@ -127,17 +126,18 @@ class ClientRequest(Request):
     def resolveHost(self, host):
         address = self.dnsCache.getCachedAddress(host)
 
-        if address != None:
-            logging.debug("Host cached.")
-            return defer.succeed(address)
-        else:
+        if address is None:
             logging.debug("Host not cached.")
             return reactor.resolve(host)
 
+        else:
+            logging.debug("Host cached.")
+            return defer.succeed(address)
+
     def process(self):
-        logging.debug("Resolving host: %s" % (self.getHeader('host')))
+        logging.debug(f"Resolving host: {self.getHeader('host')}")
         host     = self.getHeader('host')
-        hostparts = host.split(':')               
+        hostparts = host.split(':')
         deferred = self.resolveHost(hostparts[0])
 
         deferred.addCallback(self.handleHostResolvedSuccess)
@@ -157,9 +157,11 @@ class ClientRequest(Request):
     def sendExpiredCookies(self, host, path, expireHeaders):
         self.setResponseCode(302, "Moved")
         self.setHeader("Connection", "close")
-        self.setHeader("Location", "http://" + host + path)
-        self.write("""<noscript><meta http-equiv="refresh" content="0; url=http://%s%s"></noscript>""" % (host, path))
-        
+        self.setHeader("Location", f"http://{host}{path}")
+        self.write(
+            f"""<noscript><meta http-equiv="refresh" content="0; url=http://{host}{path}"></noscript>"""
+        )
+
         for header in expireHeaders:
             self.setHeader("Set-Cookie", header)
 
@@ -169,13 +171,11 @@ class ClientRequest(Request):
             logging.warning("Could not finish session.")
         
     def sendSpoofedFaviconResponse(self):
-        icoFile = open(self.getPathToLockIcon())
+        with open(self.getPathToLockIcon()) as icoFile:
+            self.setResponseCode(200, "OK")
+            self.setHeader("Content-type", "image/x-icon")
+            self.write(icoFile.read())
 
-        self.setResponseCode(200, "OK")
-        self.setHeader("Content-type", "image/x-icon")
-        self.write(icoFile.read())
-                
-        icoFile.close()
         try:
             self.finish()
         except RuntimeError:

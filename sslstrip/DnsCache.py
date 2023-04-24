@@ -14,13 +14,10 @@ class DnsCache:
         self.cache[host] = address
 
     def getCachedAddress(self, host):
-        if host in self.cache:
-            return self.cache[host]
-
-        return None
+        return self.cache[host] if host in self.cache else None
 
     def getInstance():
-        if DnsCache._instance == None:
+        if DnsCache._instance is None:
             DnsCache._instance = DnsCache()
 
         return DnsCache._instance
